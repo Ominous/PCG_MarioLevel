@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<projectDescription>
+	<name>marioai</name>
+	<comment></comment>
+	<projects>
+	</projects>
+	<buildSpec>
+		<buildCommand>
+			<name>org.eclipse.jdt.core.javabuilder</name>
+			<arguments>
+			</arguments>
+		</buildCommand>
+	</buildSpec>
+	<natures>
+		<nature>org.eclipse.jdt.core.javanature</nature>
+	</natures>
+	<linkedResources>
+		<link>
+			<name>bin</name>
+			<type>2</type>
+			<location>C:/Users/Chris/Documents/School/Game AI/homework8/MarioLevelComp2011_cs4731modified/PCG_MarioLevel/MarioLevelComp2011_cs4731-modified/bin</location>
+		</link>
+		<link>
+			<name>src</name>
+			<type>2</type>
+			<location>C:/Users/Chris/Documents/School/Game AI/homework8/MarioLevelComp2011_cs4731modified/PCG_MarioLevel/MarioLevelComp2011_cs4731-modified/src</location>
+		</link>
+	</linkedResources>
+</projectDescription>
