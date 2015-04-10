@@ -23,6 +23,7 @@ public class MyLevel extends Level{
 
 	    Random random;
 	    private int[] odds = new int[5];
+	    private int totalOdds;
 	    
 	    private static final int ODDS_STRAIGHT = 0;
 	    private static final int ODDS_HILL_STRAIGHT = 1;
@@ -171,6 +172,14 @@ public class MyLevel extends Level{
 	        lastSeed = seed;
 	        random = new Random(seed);
 	        
+	        // Default Odds:
+	        
+	        odds[ODDS_STRAIGHT] = 30;
+	        odds[ODDS_HILL_STRAIGHT] = 20;
+	        odds[ODDS_TUBES] = 4;
+	        odds[ODDS_JUMP] = 2;
+	        odds[ODDS_CANNONS] = 5;
+	        
 	      
 	        // Determine Player's play style
 	        
@@ -192,6 +201,12 @@ public class MyLevel extends Level{
 			         *	if the player killed mostly with fire, make sure power ups are more common
 			         *	if the player didn't kill with fire or shells, then make groups bigger to bounce on them
 		         */
+	        	
+		        odds[ODDS_STRAIGHT] += 5;
+		        odds[ODDS_HILL_STRAIGHT] -= 15;
+		        odds[ODDS_TUBES] +=  0;
+		        odds[ODDS_JUMP] += 0;
+		        odds[ODDS_CANNONS] += 10;
 	        }
 	              
 	        // Is the player a collector?
@@ -206,6 +221,11 @@ public class MyLevel extends Level{
 		         /*	Collector Smoothing:
 			         *	if the player didn't break many blocks, but collected a lot of coins
 			      */ 
+		        odds[ODDS_STRAIGHT] += 5;
+		        odds[ODDS_HILL_STRAIGHT] += 0;
+		        odds[ODDS_TUBES] += 0;
+		        odds[ODDS_JUMP] += 0;
+		        odds[ODDS_CANNONS] += 0;
 	        }
 	        
 	        // Is the player a jumper?
@@ -217,6 +237,11 @@ public class MyLevel extends Level{
 	        	/*	Jumper Smoothing:
 	        	 * 
 	        	 */
+		        odds[ODDS_STRAIGHT] += 0;
+		        odds[ODDS_HILL_STRAIGHT] += 5;
+		        odds[ODDS_TUBES] += 5;
+		        odds[ODDS_JUMP] =+ 5;
+		        odds[ODDS_CANNONS] -=3;
 	        }
 	        
 	        /* Create Customized odds here:
@@ -227,7 +252,7 @@ public class MyLevel extends Level{
 	            odds[ODDS_HILL_STRAIGHT] = 0;
 	        }
 	        
-	        // Set negative odds to zero
+	        // Set odds
 	        for (int i = 0; i < odds.length; i++) 
 	        {
 	            //failsafe (no negative odds)
@@ -238,9 +263,8 @@ public class MyLevel extends Level{
 
 	            // add up all numbers from inside the chance array
 	            totalOdds += odds[i];
-	            // odds[i] = (totalOdds - odds[i])
-	            odds[i] = totalOdds - odds[i];
 	        }
+	        
 	        
 	        //create the start location
 	        int length = 0;
@@ -250,18 +274,21 @@ public class MyLevel extends Level{
 	        // Creates all different section in this order until it exceeds width
 	        while (length < width - 64)
 	        {
-	            //length += buildZone(length, width - length);
+	            length += buildZone(length, width - length);
+	            /*
 				length += buildStraight(length, width-length, false);
 				length += buildStraight(length, width-length, false);
 				length += buildHillStraight(length, width-length);
 				length += buildJump(length, width-length);
 				length += buildTubes(length, width-length);
 				length += buildCannons(length, width-length);
+				*/
 	        }
 
 	        //set the end piece
 	        int floor = height - 1 - random.nextInt(4);
-
+	        
+	        //creat the exit
 	        xExit = length + 8;
 	        yExit = floor;
 
@@ -300,6 +327,44 @@ public class MyLevel extends Level{
 
 	        fixWalls();
 
+	    }
+	    
+	    private int buildZone(int x, int maxLength) {
+	        int t = random.nextInt(totalOdds);
+	        int type = 0;
+
+	        for (int i = 0; i < odds.length; i++) 
+	        {
+	        	// if the odds of jump are good enough then grab it first
+	            if(odds[ODDS_JUMP] <= t*2+30)
+	            {
+	            	type = ODDS_JUMP;
+	            	break;
+	            }
+	            
+	            // if the odds of jump are not good enough then grab whatever you can
+	        	if (odds[i] <= t) 
+	        	{
+	                type = i;
+	            }
+	        }
+
+	        switch (type) {
+	        case ODDS_STRAIGHT:
+	            return buildStraight(x, maxLength, false);
+	        case ODDS_HILL_STRAIGHT:
+	            return buildHillStraight(x, maxLength);
+	        case ODDS_TUBES:
+	            return buildTubes(x, maxLength);
+	        case ODDS_JUMP:
+	            if (gaps < Constraints.gaps)
+	                return buildJump(x, maxLength);
+	            else
+	                return buildStraight(x, maxLength, false);
+	        case ODDS_CANNONS:
+	            return buildCannons(x, maxLength);
+	        }
+	        return 0;
 	    }
 
 
