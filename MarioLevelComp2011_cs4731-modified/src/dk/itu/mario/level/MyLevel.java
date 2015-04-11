@@ -2,6 +2,8 @@ package dk.itu.mario.level;
 
 import java.util.Random;
 
+import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XsiNilLoader.Array;
+
 import dk.itu.mario.MarioInterface.Constraints;
 import dk.itu.mario.MarioInterface.GamePlay;
 import dk.itu.mario.MarioInterface.LevelInterface;
@@ -38,6 +40,14 @@ public class MyLevel extends Level{
 		private int gaps;		// Jumper
 		private int turtles;	// Hunter
 		private int coins;		// Collector
+		
+		private final int N = 100;	// the Annealing sampling size to cut the level builder off at
+		private int globalLevelRatingPeak = 0; // the Annealing current highest level rating
+		private int localLevelRatingPeak = 0;
+		private int globalPeakLevel; // The highest rated Level holder
+		private int localPeakLevel; // highest rated Level in the sample holder
+		private int[] levelLibrary = new int[width]; // library of points in the level where a pattern was created
+		private int[] localPeakLibrary = new int[width]; // library of points in the level where a pattern was created in the local Max Level
 		
 		private GamePlay playerData;
 		
@@ -268,21 +278,61 @@ public class MyLevel extends Level{
 	        
 	        //create the start location
 	        int length = 0;
-	        length += buildStraight(0, width, true);
-
-	        //create all of the medium sections
-	        // Creates all different section in this order until it exceeds width
-	        while (length < width - 64)
+	        
+	        
+	        for(int i = 0; i<N; i++)
 	        {
-	            length += buildZone(length, width - length);
-	            /*
-				length += buildStraight(length, width-length, false);
-				length += buildStraight(length, width-length, false);
-				length += buildHillStraight(length, width-length);
-				length += buildJump(length, width-length);
-				length += buildTubes(length, width-length);
-				length += buildCannons(length, width-length);
-				*/
+	        	// Reset back to empty level
+	        	length = buildStraight(0, width, true);            		// Create beginning of level    	
+	        	levelLibrary = new int[width];							// Create empty library of patterns in level
+	        	int currentRating = 0;									// Create current Rating of level made
+	        	
+	        	// With the empty level look for a local peak level
+	        	// If the level is a global peak it will replace the global peak level as the best level possible
+	        	do
+	        	{
+	        		// set the new rating to beat
+	        		localLevelRatingPeak = currentRating;
+	        		
+		        	// Set new localPeak and library
+		        	localPeakLevel = length;
+		        	localPeakLibrary = levelLibrary.clone();
+        			
+		        	// Create middle of level
+        			int k = 0;
+			        while (length < width - 64)
+			        {
+			            //If the level keeps this piece placement
+			        	if(localPeakLibrary[k]!=0 && true)
+			        	{
+
+			        	}else 
+			        	{
+				        	//If the level throws out previous piece				            	
+			        		int pieceOfLevel = buildZone(length, width - length);
+				            length += pieceOfLevel;
+				            levelLibrary[k] = pieceOfLevel;
+			        	}
+			            k++;
+			        }
+			        
+			        // Evaluate middle of level (give a level rating)
+			        int j = 0;
+			        while(levelLibrary[j]>0)
+			        {
+			        	// piece of the constructed level
+			        }
+			        //currentRating = 
+			        
+			        
+	        	}while(currentRating > localLevelRatingPeak);
+	        	
+	        	// adjust global best level
+	        	if(localLevelRatingPeak > globalLevelRatingPeak)
+	        	{
+		        	globalLevelRatingPeak = localLevelRatingPeak;
+		        	globalPeakLevel = localPeakLevel;
+	        	}    	
 	        }
 
 	        //set the end piece
@@ -336,7 +386,7 @@ public class MyLevel extends Level{
 	        for (int i = 0; i < odds.length; i++) 
 	        {
 	        	// if the odds of jump are good enough then grab it first
-	            if(odds[ODDS_JUMP] <= t*2+30)
+	            if(odds[ODDS_JUMP] > t*2+30)
 	            {
 	            	type = ODDS_JUMP;
 	            	break;
