@@ -13,154 +13,153 @@ import dk.itu.mario.engine.sprites.Enemy;
 
 public class MyLevel extends Level{
 	//Store information about the level
-	 public   int ENEMIES = 0; //the number of enemies the level contains
-	 public   int BLOCKS_EMPTY = 0; // the number of empty blocks
-	 public   int BLOCKS_COINS = 0; // the number of coin blocks
-	 public   int BLOCKS_POWER = 0; // the number of power blocks
-	 public   int COINS = 0; //These are the coins in boxes that Mario collect
+	public   int ENEMIES = 0; //the number of enemies the level contains
+	public   int BLOCKS_EMPTY = 0; // the number of empty blocks
+	public   int BLOCKS_COINS = 0; // the number of coin blocks
+	public   int BLOCKS_POWER = 0; // the number of power blocks
+	public   int COINS = 0; //These are the coins in boxes that Mario collect
 
  
 	//private static Random levelSeedRandom = new Random();
-	    public static long lastSeed;
-
-	    Random random;
-	    private int[] odds = new int[5];
-	    private int totalOdds;
-	    
-	    private static final int ODDS_STRAIGHT = 0;
-	    private static final int ODDS_HILL_STRAIGHT = 1;
-	    private static final int ODDS_TUBES = 2;
-	    private static final int ODDS_JUMP = 3;
-	    private static final int ODDS_CANNONS = 4;
-	    private static final int JumpingThreshold = 3;
+	public static long lastSeed;
+	Random random;
+	private int[] odds = new int[5];
+	public int totalOdds = 0;
+	private static final int ODDS_STRAIGHT = 0;
+	private static final int ODDS_HILL_STRAIGHT = 1;
+	private static final int ODDS_TUBES = 2;
+	private static final int ODDS_JUMP = 3;
+	private static final int ODDS_CANNONS = 4;
+	private static final int JumpingThreshold = 3;
 
   
-	    private int difficulty;
-	    private int type;
-		private int gaps;		// Jumper
-		private int turtles;	// Hunter
-		private int coins;		// Collector
-		
-		private final int N = 100;	// the Annealing sampling size to cut the level builder off at
-		private int globalLevelRatingPeak = 0; // the Annealing current highest level rating
-		private int localLevelRatingPeak = 0;
-		private int globalPeakLevel; // The highest rated Level holder
-		private int localPeakLevel; // highest rated Level in the sample holder
-		private int[] levelLibrary = new int[width]; // library of points in the level where a pattern was created
-		private int[] localPeakLibrary = new int[width]; // library of points in the level where a pattern was created in the local Max Level
-		
-		private GamePlay playerData;
-		
-		/* Tools -
-		 * 		o Coins - (spawns on ground)= Coins++
-		 * 		o Power Up Blocks - (Jump) = Power Up
-		 * 		o Coin Blocks - (Jump && Power Up) = Coins++
-		 * 		o Empty Blocks - (Jump && Power Up) = Nothing
-		 * 		o Hills - (Jump) = (Kill || Coins || Nothing)
-		 * 		o Pits - (Jump) = Nothing
-		 * 		o Goombas - (Jump) = Kill
-		 * 		o Koopas - (Jump || Jump x2) = (Kill || Kill x2)
-		 * 		o Cannons - (Jump) = (Kill || Nothing)
-		 */
-		
-		/*
-		 * Pecking Order: Killer > Collector > Jumper
-		 * 
-		 * Assumed Scoring based on type of player
-		 * Killer -
-		 * 		Pros: 
-		 * 			o Koopas + Goombas
-		 * 			o Goombas
-		 * 			o Goomba
-		 * 			o Cannon
-		 * 		
-		 * 		Cons:
-		 * 			o Hills
-		 * 			o Koopas
-		 * 
-		 * Collector -
-		 * 		Pros:
-		 * 			o Power Up
-		 * 			o Coins
-		 * 			o CoinBlocks
-		 * 			o Empty Blocks
-		 * 
-		 * 		Cons:
-		 * 			o Hills 
-		 * 			o Enemies
-		 *			o Long rows of blocks
-		 * 
-		 * Jumper -
-		 * 		Pros:
-		 * 			o Hills
-		 * 			o Blocks
-		 * 			o Block patterns
-		 * 			o Koopas
-		 * 			o Higher Coins
-		 * 			o Pits After Blocks
-		 * 	
-		 * 		Cons:
-		 * 			o Pits
-		 * 
-		 * 
-		 * Determining Type of Player:  
-		 * Killer: 
-	         * enemyKillByFire; //number of enemies killed by shooting them
-	         * enemyKillByKickingShell; //number of enemies killed by kicking a shell on them
-	         * totalEnemies; //total number of enemies
-	         * GoombasKilled; //number of Goombas Mario killed
-	         * RedTurtlesKilled; //number of Red Turtle Mario killed
-	         * GreenTurtlesKilled;//number of Green Turtle Mario killed
-	         * ArmoredTurtlesKilled; //number of Armored Turtle Mario killed
-	         * CannonBallKilled; //number of Cannon Ball Mario killed
-	         * JumpFlowersKilled; //number of Jump Flower Mario killed
-	         * ChompFlowersKilled; //number of Chomp Flower Mario killed
-			 *
-         * Collector:
-	         * emptyBlocksDestroyed; //number of empty blocks destroyed
-	         * coinBlocksDestroyed; //number of coin block destroyed
-	         * percentageBlocksDestroyed; //percentage of all blocks destroyed
-	         * percentageCoinBlocksDestroyed; //percentage of coin blocks destroyed
-	         * percentageEmptyBlockesDestroyed; //percentage of empty blocks destroyed
-	         * percentagePowerBlockDestroyed; //percentage of power blocks destroyed	         
-	         * coinsCollected; //number of coins collected
-	         * totalEmptyBlocks; //total number of empty blocks
-	         * totalCoinBlocks; //total number of coin blocks
-	         * totalpowerBlocks; //total number of power blocks
-	         * totalCoins; //total number of coins
-	         * 
-         * Jumper:
-	         * aimlessJumps; //number of jumps without a reason
-	         * jumpsNumber; // total number of jumps
-	         * 
-         * Too Specific:
-	         * completionTime; //counts only the current run on the level, excluding death games
-	         * duckNumber; //total number of ducks
-	         * timeSpentDucking; // time spent in ducking mode
-	         * timesPressedRun;//number of times the run key pressed
-	         * timeSpentRunning; //total time spent running
-	         * timeRunningRight; //total time spent running to the right
-	         * timeRunningLeft;//total time spent running to the left
-	         * powerBlocksDestroyed; //number of power block destroyed
-	         * kickedShells; //number of shells Mario kicked
-	         * totalTimeLittleMode; //total time spent in little mode
-	         * totalTimeLargeMode; //total time spent in large mode
-	         * totalTimeFireMode; //total time spent in fire mode
-	         * 
-         * Useless:
-	         * totalTime;//sums all the time, including from previous games if player died
-	         * timesSwichingPower; //number of Times Switched Between Little, Large or Fire Mario
-	         * timesOfDeathByFallingIntoGap; //number of death by falling into a gap
-	         * timesOfDeathByRedTurtle; //number of times Mario died by red turtle
-	         * timesOfDeathByArmoredTurtle; //number of times Mario died by Armored turtle
-	         * timesOfDeathByGoomba; //number of times Mario died by Goomba
-	         * timesOfDeathByGreenTurtle; //number of times Mario died by green turtle
-	         * timesOfDeathByJumpFlower; //number of times Mario died by Jump Flower
-	         * timesOfDeathByCannonBall; //number of time Mario died by Cannon Ball
-	         * timesOfDeathByChompFlower; //number of times Mario died by Chomp Flower
-		 */
-		
-		
+	private int difficulty;
+	private int type;
+	private int gaps;		// Jumper
+	private int turtles;	// Hunter
+	private int coins;		// Collector
+	
+	private final int N = 100;	// the Annealing sampling size to cut the level builder off at
+	private int globalLevelRatingPeak = 0; // the Annealing current highest level rating
+	private int localLevelRatingPeak = 0;
+	private int globalPeakLevel; // The highest rated Level holder
+	private int localPeakLevel; // highest rated Level in the sample holder
+	private int[] levelLibrary = new int[width]; // library of points in the level where a pattern was created
+	private int[] localPeakLibrary = new int[width]; // library of points in the level where a pattern was created in the local Max Level
+	
+	private GamePlay playerData;
+	private boolean[] playerCode = new boolean[3]; // playerCode[0] = 0 or 1 if killer, playercode[1] = 0 or 1 if collector, playerCode[2] = 0 or 1 if jumper
+	
+	/* Tools -
+	 * 		o Coins - (spawns on ground)= Coins++
+	 * 		o Power Up Blocks - (Jump) = Power Up
+	 * 		o Coin Blocks - (Jump && Power Up) = Coins++
+	 * 		o Empty Blocks - (Jump && Power Up) = Nothing
+	 * 		o Hills - (Jump) = (Kill || Coins || Nothing)
+	 * 		o Pits - (Jump) = Nothing
+	 * 		o Goombas - (Jump) = Kill
+	 * 		o Koopas - (Jump || Jump x2) = (Kill || Kill x2)
+	 * 		o Cannons - (Jump) = (Kill || Nothing)
+	 */
+	
+	/*
+	 * Pecking Order: Killer > Collector > Jumper
+	 * 
+	 * Assumed Scoring based on type of player
+	 * Killer -
+	 * 		Pros: 
+	 * 			o Koopas + Goombas
+	 * 			o Goombas
+	 * 			o Goomba
+	 * 			o Cannon
+	 * 		
+	 * 		Cons:
+	 * 			o Hills
+	 * 			o Koopas
+	 * 
+	 * Collector -
+	 * 		Pros:
+	 * 			o Power Up
+	 * 			o Coins
+	 * 			o CoinBlocks
+	 * 			o Empty Blocks
+	 * 
+	 * 		Cons:
+	 * 			o Hills 
+	 * 			o Enemies
+	 *			o Long rows of blocks
+	 * 
+	 * Jumper -
+	 * 		Pros:
+	 * 			o Hills
+	 * 			o Blocks
+	 * 			o Block patterns
+	 * 			o Koopas
+	 * 			o Higher Coins
+	 * 			o Pits After Blocks
+	 * 	
+	 * 		Cons:
+	 * 			o Pits
+	 * 
+	 * 
+	 * Determining Type of Player:  
+	 * Killer: 
+         * enemyKillByFire; //number of enemies killed by shooting them
+         * enemyKillByKickingShell; //number of enemies killed by kicking a shell on them
+         * totalEnemies; //total number of enemies
+         * GoombasKilled; //number of Goombas Mario killed
+         * RedTurtlesKilled; //number of Red Turtle Mario killed
+         * GreenTurtlesKilled;//number of Green Turtle Mario killed
+         * ArmoredTurtlesKilled; //number of Armored Turtle Mario killed
+         * CannonBallKilled; //number of Cannon Ball Mario killed
+         * JumpFlowersKilled; //number of Jump Flower Mario killed
+         * ChompFlowersKilled; //number of Chomp Flower Mario killed
+		 *
+     * Collector:
+         * emptyBlocksDestroyed; //number of empty blocks destroyed
+         * coinBlocksDestroyed; //number of coin block destroyed
+         * percentageBlocksDestroyed; //percentage of all blocks destroyed
+         * percentageCoinBlocksDestroyed; //percentage of coin blocks destroyed
+         * percentageEmptyBlockesDestroyed; //percentage of empty blocks destroyed
+         * percentagePowerBlockDestroyed; //percentage of power blocks destroyed	         
+         * coinsCollected; //number of coins collected
+         * totalEmptyBlocks; //total number of empty blocks
+         * totalCoinBlocks; //total number of coin blocks
+         * totalpowerBlocks; //total number of power blocks
+         * totalCoins; //total number of coins
+         * 
+     * Jumper:
+         * aimlessJumps; //number of jumps without a reason
+         * jumpsNumber; // total number of jumps
+         * 
+     * Too Specific:
+         * completionTime; //counts only the current run on the level, excluding death games
+         * duckNumber; //total number of ducks
+         * timeSpentDucking; // time spent in ducking mode
+         * timesPressedRun;//number of times the run key pressed
+         * timeSpentRunning; //total time spent running
+         * timeRunningRight; //total time spent running to the right
+         * timeRunningLeft;//total time spent running to the left
+         * powerBlocksDestroyed; //number of power block destroyed
+         * kickedShells; //number of shells Mario kicked
+         * totalTimeLittleMode; //total time spent in little mode
+         * totalTimeLargeMode; //total time spent in large mode
+         * totalTimeFireMode; //total time spent in fire mode
+         * 
+     * Useless:
+         * totalTime;//sums all the time, including from previous games if player died
+         * timesSwichingPower; //number of Times Switched Between Little, Large or Fire Mario
+         * timesOfDeathByFallingIntoGap; //number of death by falling into a gap
+         * timesOfDeathByRedTurtle; //number of times Mario died by red turtle
+         * timesOfDeathByArmoredTurtle; //number of times Mario died by Armored turtle
+         * timesOfDeathByGoomba; //number of times Mario died by Goomba
+         * timesOfDeathByGreenTurtle; //number of times Mario died by green turtle
+         * timesOfDeathByJumpFlower; //number of times Mario died by Jump Flower
+         * timesOfDeathByCannonBall; //number of time Mario died by Cannon Ball
+         * timesOfDeathByChompFlower; //number of times Mario died by Chomp Flower
+	 */
+	
+	
 		public MyLevel(int width, int height)
 	    {
 			super(width, height);
@@ -217,6 +216,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_TUBES] +=  0;
 		        odds[ODDS_JUMP] += 0;
 		        odds[ODDS_CANNONS] += 10;
+		        playerCode[0] = true;
 	        }
 	              
 	        // Is the player a collector?
@@ -236,6 +236,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_TUBES] += 0;
 		        odds[ODDS_JUMP] += 0;
 		        odds[ODDS_CANNONS] += 0;
+		        playerCode[1] = true;
 	        }
 	        
 	        // Is the player a jumper?
@@ -252,6 +253,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_TUBES] += 5;
 		        odds[ODDS_JUMP] =+ 5;
 		        odds[ODDS_CANNONS] -=3;
+		        playerCode[2] = true;
 	        }
 	        
 	        /* Create Customized odds here:
@@ -279,50 +281,100 @@ public class MyLevel extends Level{
 	        //create the start location
 	        int length = 0;
 	        
-	        
+	        // Annealing
 	        for(int i = 0; i<N; i++)
 	        {
 	        	// Reset back to empty level
 	        	length = buildStraight(0, width, true);            		// Create beginning of level    	
 	        	levelLibrary = new int[width];							// Create empty library of patterns in level
+	        	int librarySize = 0;
 	        	int currentRating = 0;									// Create current Rating of level made
 	        	
 	        	// With the empty level look for a local peak level
 	        	// If the level is a global peak it will replace the global peak level as the best level possible
 	        	do
 	        	{
+	        		ENEMIES = 0; //the number of enemies the level contains
+	        		BLOCKS_EMPTY = 0; // the number of empty blocks
+	        		BLOCKS_COINS = 0; // the number of coin blocks
+	        		BLOCKS_POWER = 0; // the number of power blocks
+	        		COINS = 0;
 	        		// set the new rating to beat
 	        		localLevelRatingPeak = currentRating;
 	        		
 		        	// Set new localPeak and library
 		        	localPeakLevel = length;
 		        	localPeakLibrary = levelLibrary.clone();
+		        	
+		        	currentRating = 0;
+		        	int mutatedGene = -1;
+		        	
+		        	if(librarySize != 0)
+		        	{
+			        	mutatedGene = random.nextInt(librarySize);
+		        	}
         			
 		        	// Create middle of level
         			int k = 0;
 			        while (length < width - 64)
 			        {
 			            //If the level keeps this piece placement
-			        	if(localPeakLibrary[k]!=0 && true)
+			        	if(localPeakLibrary[k]!=0 && (mutatedGene>-1 && k == mutatedGene))
 			        	{
+			        		length += localPeakLibrary[k];
+			        		levelLibrary[k] = localPeakLibrary[k];
 
 			        	}else 
 			        	{
-				        	//If the level throws out previous piece				            	
+				        	//If the level throws out previous piece for a random one				            	
 			        		int pieceOfLevel = buildZone(length, width - length);
 				            length += pieceOfLevel;
 				            levelLibrary[k] = pieceOfLevel;
 			        	}
 			            k++;
 			        }
+			        librarySize = k;
 			        
 			        // Evaluate middle of level (give a level rating)
 			        int j = 0;
 			        while(levelLibrary[j]>0)
 			        {
 			        	// piece of the constructed level
+			        	j++;
 			        }
-			        //currentRating = 
+
+			        
+			        //if add a point for enemies
+			        if(playerCode[0])
+			        {
+			        	currentRating+= 2*ENEMIES;
+			        }
+			        
+			        playerCode[1]= true;
+			        if(playerCode[1])
+			        {
+			        	currentRating+= 3*COINS;
+			        	currentRating+= 2*BLOCKS_COINS;
+			        	currentRating+= 1*BLOCKS_POWER;
+			        	currentRating-= 1*BLOCKS_EMPTY;
+			        	currentRating-= 5*ENEMIES;
+			        	System.out.println(currentRating);
+			        }
+			        
+			        if(playerCode[2])
+			        {
+			        	if(BLOCKS_EMPTY<(width/4))
+			        	{
+			        		currentRating+= 1*BLOCKS_EMPTY;
+			        	}else 
+			        	{
+			        		currentRating-= 1*BLOCKS_EMPTY;
+			        	}
+			        }
+			        
+			        if(currentRating>0)
+			        	currentRating = random.nextInt(currentRating)+ 5;
+			        else currentRating = random.nextInt(5)+5;
 			        
 			        
 	        	}while(currentRating > localLevelRatingPeak);
@@ -334,7 +386,9 @@ public class MyLevel extends Level{
 		        	globalPeakLevel = localPeakLevel;
 	        	}    	
 	        }
-
+	        // set best scored level
+	        length = globalPeakLevel;
+	        
 	        //set the end piece
 	        int floor = height - 1 - random.nextInt(4);
 	        
@@ -469,6 +523,7 @@ public class MyLevel extends Level{
 
 	    private int buildCannons(int xo, int maxLength)
 	    {
+	    	ENEMIES++;
 	        int length = random.nextInt(10) + 2;
 	        if (length > maxLength) length = maxLength;
 
