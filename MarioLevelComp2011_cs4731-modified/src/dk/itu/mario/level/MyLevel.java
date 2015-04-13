@@ -39,7 +39,7 @@ public class MyLevel extends Level{
 	private int turtles;	// Hunter
 	private int coins;		// Collector
 	
-	private final int N = 100;	// the Annealing sampling size to cut the level builder off at
+	private final int N = 1000;	// the Annealing sampling size to cut the level builder off at
 	private int globalLevelRatingPeak = 0; // the Annealing current highest level rating
 	private int localLevelRatingPeak = 0;
 	private int globalPeakLevel; // The highest rated Level holder
@@ -183,11 +183,11 @@ public class MyLevel extends Level{
 	        
 	        // Default Odds:
 	        
-	        odds[ODDS_STRAIGHT] = 30;
-	        odds[ODDS_HILL_STRAIGHT] = 20;
-	        odds[ODDS_TUBES] = 4;
-	        odds[ODDS_JUMP] = 2;
-	        odds[ODDS_CANNONS] = 5;
+	        odds[ODDS_STRAIGHT] = 40;
+	        odds[ODDS_HILL_STRAIGHT] = 30;
+	        odds[ODDS_TUBES] = 14;
+	        odds[ODDS_JUMP] = 12;
+	        odds[ODDS_CANNONS] = 1;
 	        
 	      
 	        // Determine Player's play style
@@ -215,7 +215,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_HILL_STRAIGHT] -= 15;
 		        odds[ODDS_TUBES] +=  0;
 		        odds[ODDS_JUMP] += 0;
-		        odds[ODDS_CANNONS] += 10;
+		        odds[ODDS_CANNONS] += 1;
 		        playerCode[0] = true;
 	        }
 	              
@@ -272,6 +272,7 @@ public class MyLevel extends Level{
 	            {
 	                odds[i] = 0;
 	            }
+	            System.out.println("Cannons:? "+odds[ODDS_CANNONS]);
 
 	            // add up all numbers from inside the chance array
 	            totalOdds += odds[i];
@@ -327,9 +328,11 @@ public class MyLevel extends Level{
 			        	}else 
 			        	{
 				        	//If the level throws out previous piece for a random one				            	
-			        		int pieceOfLevel = buildZone(length, width - length);
+			        		//int pieceOfLevel = buildZone(length, width - length);
+			        		int pieceOfLevel = buildStraight(length,width-length, false);
 				            length += pieceOfLevel;
 				            levelLibrary[k] = pieceOfLevel;
+				            
 			        	}
 			            k++;
 			        }
@@ -358,7 +361,6 @@ public class MyLevel extends Level{
 			        	currentRating+= 1*BLOCKS_POWER;
 			        	currentRating-= 1*BLOCKS_EMPTY;
 			        	currentRating-= 5*ENEMIES;
-			        	System.out.println(currentRating);
 			        }
 			        
 			        if(playerCode[2])
@@ -371,11 +373,14 @@ public class MyLevel extends Level{
 			        		currentRating-= 1*BLOCKS_EMPTY;
 			        	}
 			        }
+
 			        
 			        if(currentRating>0)
 			        	currentRating = random.nextInt(currentRating)+ 5;
-			        else currentRating = random.nextInt(5)+5;
-			        
+			        else if(currentRating == 0) currentRating = random.nextInt(5)+5;
+		        	
+			        //System.out.println(currentRating+ " > "+ localLevelRatingPeak);
+
 			        
 	        	}while(currentRating > localLevelRatingPeak);
 	        	
@@ -387,6 +392,7 @@ public class MyLevel extends Level{
 	        	}    	
 	        }
 	        // set best scored level
+        	System.out.println("final: "+globalLevelRatingPeak);
 	        length = globalPeakLevel;
 	        
 	        //set the end piece
@@ -440,7 +446,7 @@ public class MyLevel extends Level{
 	        for (int i = 0; i < odds.length; i++) 
 	        {
 	        	// if the odds of jump are good enough then grab it first
-	            if(odds[ODDS_JUMP] > t*2+30)
+	            if(odds[ODDS_JUMP] > t*2)
 	            {
 	            	type = ODDS_JUMP;
 	            	break;
@@ -450,6 +456,7 @@ public class MyLevel extends Level{
 	        	if (odds[i] <= t) 
 	        	{
 	                type = i;
+	                break;
 	            }
 	        }
 
@@ -730,6 +737,8 @@ public class MyLevel extends Level{
 
 	        if (safe)
 	        	length = 10 + random.nextInt(5);
+	        	
+	        
 
 	        if (length > maxLength)
 	        	length = maxLength;
@@ -795,34 +804,48 @@ public class MyLevel extends Level{
 	                {
 	                    if (rocks)
 	                    {
+	                    	// if s is greater than 0 && x+xStart+1 < xLenghth - 2 && 1/3 chance
 	                        if (x != xStart + 1 && x != xLength - 2 && random.nextInt(3) == 0)
 	                        {
+	                        	// 1/4 chance (1/12 overall)
 	                            if (random.nextInt(4) == 0)
 	                            {
-	                                setBlock(x, floor - 4, BLOCK_POWERUP);
-	                                BLOCKS_POWER++;
+
+	                            	if(floor < height-1)
+	                            	{
+		                                setBlock(x, floor - 4, BLOCK_POWERUP);
+
+		                                BLOCKS_POWER++;
+	                            	}
 	                            }
-	                            else
+	                            else// 3/4 chance (1/4 overall)
 	                            {	//the fills a block with a hidden coin
-	                                setBlock(x, floor - 4, BLOCK_COIN);
-	                                BLOCKS_COINS++;
+	                                if(floor < height-1)
+	                                {
+		                                setBlock(x, floor - 4, BLOCK_COIN);
+	                                	BLOCKS_COINS++;
+	                                }else 
+	                                {
+	                                }
 	                            }
 	                        }
-	                        else if (random.nextInt(4) == 0)
+	                        else if (random.nextInt(4) == 0)// (1/6 chance)
 	                        {
-	                            if (random.nextInt(4) == 0)
+	                            if (random.nextInt(4) == 0)// (1/24 chance)
 	                            {
+	                            	// Random AF block, could be anything
 	                                setBlock(x, floor - 4, (byte) (2 + 1 * 16));
 	                            }
-	                            else
+	                            else // (1/8 chance)
 	                            {
+	                            	// Random AF block, could be anything
 	                                setBlock(x, floor - 4, (byte) (1 + 1 * 16));
 	                            }
 	                        }
-	                        else
+	                        else //(1/2)
 	                        {
 	                            setBlock(x, floor - 4, BLOCK_EMPTY);
-	                            BLOCKS_EMPTY++;
+                            	BLOCKS_EMPTY++;
 	                        }
 	                    }
 	                }
