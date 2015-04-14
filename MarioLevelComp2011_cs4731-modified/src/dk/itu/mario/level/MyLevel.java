@@ -18,6 +18,7 @@ public class MyLevel extends Level{
 	public   int BLOCKS_COINS = 0; // the number of coin blocks
 	public   int BLOCKS_POWER = 0; // the number of power blocks
 	public   int COINS = 0; //These are the coins in boxes that Mario collect
+	public 	int WASTE = 0;
 
  
 	//private static Random levelSeedRandom = new Random();
@@ -38,8 +39,9 @@ public class MyLevel extends Level{
 	private int gaps;		// Jumper
 	private int turtles;	// Hunter
 	private int coins;		// Collector
+	private boolean debug = false;
 	
-	private final int N = 1000;	// the Annealing sampling size to cut the level builder off at
+	private final int N = 100000;	// the Annealing sampling size to cut the level builder off at
 	private int globalLevelRatingPeak = 0; // the Annealing current highest level rating
 	private int localLevelRatingPeak = 0;
 	private int globalPeakLevel; // The highest rated Level holder
@@ -300,6 +302,7 @@ public class MyLevel extends Level{
 	        		BLOCKS_COINS = 0; // the number of coin blocks
 	        		BLOCKS_POWER = 0; // the number of power blocks
 	        		COINS = 0;
+	        		WASTE = 0;
 	        		// set the new rating to beat
 	        		localLevelRatingPeak = currentRating;
 	        		
@@ -328,8 +331,8 @@ public class MyLevel extends Level{
 			        	}else 
 			        	{
 				        	//If the level throws out previous piece for a random one				            	
-			        		//int pieceOfLevel = buildZone(length, width - length);
-			        		int pieceOfLevel = buildStraight(length,width-length, false);
+			        		int pieceOfLevel = buildZone(length, width - length);
+			        		//int pieceOfLevel = buildStraight(length,width-length, false);
 				            length += pieceOfLevel;
 				            levelLibrary[k] = pieceOfLevel;
 				            
@@ -374,6 +377,7 @@ public class MyLevel extends Level{
 			        	}
 			        }
 
+			        currentRating -= 1*WASTE;
 			        
 			        if(currentRating>0)
 			        	currentRating = random.nextInt(currentRating)+ 5;
@@ -549,6 +553,10 @@ public class MyLevel extends Level{
 	            {
 	                if (y >= floor)
 	                {
+                    	if(getBlock(x,y)!=0)
+                    	{
+                    		return 0;
+                    	}
 	                    setBlock(x, y, GROUND);
 	                }
 	                else
@@ -557,14 +565,26 @@ public class MyLevel extends Level{
 	                    {
 	                        if (y == cannonHeight)
 	                        {
+	                        	if(getBlock(x,y)!=0)
+	                        	{
+	                        		return 0;
+	                        	}
 	                            setBlock(x, y, (byte) (14 + 0 * 16));
 	                        }
 	                        else if (y == cannonHeight + 1)
 	                        {
+	                        	if(getBlock(x,y)!=0)
+	                        	{
+	                        		return 0;
+	                        	}
 	                            setBlock(x, y, (byte) (14 + 1 * 16));
 	                        }
 	                        else
 	                        {
+	                        	if(getBlock(x,y)!=0)
+	                        	{
+	                        		return 0;
+	                        	}
 	                            setBlock(x, y, (byte) (14 + 2 * 16));
 	                        }
 	                    }
@@ -670,9 +690,11 @@ public class MyLevel extends Level{
 	                {
 	                    type = random.nextInt(3);
 	                }
-
-	                setSpriteTemplate(x, y, new SpriteTemplate(type, random.nextInt(35) < difficulty));
-	                ENEMIES++;
+	                if(getBlock(x,y) == 0)
+	                {
+		                setSpriteTemplate(x, y, new SpriteTemplate(type, random.nextInt(35) < difficulty));
+		                ENEMIES++;
+	                }
 	            }
 	        }
 	    }
@@ -696,8 +718,37 @@ public class MyLevel extends Level{
 
 	            if (x == xTube && random.nextInt(11) < difficulty + 1)
 	            {
+	            	
 	                setSpriteTemplate(x, tubeHeight, new SpriteTemplate(Enemy.ENEMY_FLOWER, false));
 	                ENEMIES++;
+	            }
+	            
+	            
+	            for(int y = 0; y < height; y++)
+	            {
+	            	if(y>= floor)
+	            	{
+	            		if(getBlock(x,y)!=0)
+	            			return 0;
+	                    setBlock(x, y,GROUND);
+	            	}else
+	            	{
+	            		if((x== xTube || x== xTube +1) && y>=tubeHeight)
+	            		{
+	            			int xPic = 10 + x -xTube;
+	            			if(y== tubeHeight)
+	            			{
+	            				if(getBlock(x,y)!=0)
+	            				{
+	            					return 0;
+	            				}
+	            			}else 
+	            			{
+	            				if(getBlock(x,y)!=0)
+	            					return 0;
+	            			}
+	            		}
+	            	}
 	            }
 
 	            for (int y = 0; y < height; y++)
@@ -716,12 +767,19 @@ public class MyLevel extends Level{
 	                        if (y == tubeHeight)
 	                        {
 	                        	//tube top
-	                            setBlock(x, y, (byte) (xPic + 0 * 16));
+	                        	if(getBlock(x,y)==0)
+	                        	{
+	                        		setBlock(x, y, (byte) (xPic + 0 * 16));
+	                        	}else return 0;
+	                        		
 	                        }
 	                        else
 	                        {
 	                        	//tube side
-	                            setBlock(x, y, (byte) (xPic + 1 * 16));
+	                        	if(getBlock(x,y)==0)
+	                        	{
+	                        		setBlock(x, y, (byte) (xPic + 1 * 16));
+	                        	}else return 0;
 	                        }
 	                    }
 	                }
@@ -782,10 +840,13 @@ public class MyLevel extends Level{
 
 	        int s = random.nextInt(4);
 	        int e = random.nextInt(4);
-
+	        
+	        //Coins placed under blocks
 	        if (floor - 2 > 0){
 	            if ((xLength - 1 - e) - (xStart + 1 + s) > 1){
 	                for(int x = xStart + 1 + s; x < xLength - 1 - e; x++){
+	                	if(getBlock(x-1,floor-2)!=0)
+	                		WASTE++;
 	                    setBlock(x, floor - 2, COIN);
 	                    COINS++;
 	                }
@@ -796,7 +857,7 @@ public class MyLevel extends Level{
 	        e = random.nextInt(4);
 	        
 	        //this fills the set of blocks and the hidden objects inside them
-	        if (floor - 4 > 0)
+	        if (floor - 4 > 4)
 	        {
 	            if ((xLength - 1 - e) - (xStart + 1 + s) > 2)
 	            {
@@ -814,16 +875,89 @@ public class MyLevel extends Level{
 	                            	if(floor < height-1)
 	                            	{
 		                                setBlock(x, floor - 4, BLOCK_POWERUP);
-
-		                                BLOCKS_POWER++;
+		                                
+		                                // if the space below is empty then it counts
+		                                if(getBlock(x,floor-3) == 0 && (floor-5>0 &&  getBlock(x,floor-5)==0))
+		                                {
+		                                	BLOCKS_POWER++;
+		                                }else WASTE++;
+		                                
+		                                //don't box up coins
+		                                if(getBlock(x-1,floor-4) == COIN || getBlock(x,floor-5) == COIN|| getBlock(x,floor-3)== COIN)
+		                                {
+		                                	WASTE++;
+		                                }
+		                                
+		                                //don't make unjumpable blocks
+		                                int c = -2;
+		                                while(floor+c < height)
+		                                {
+		                                	if(getBlock(x-1,floor+c)==0)
+		                                	{
+		                                		WASTE++;
+		                                	}else break;
+		                                	c++;
+		                                }
+		                                
+		                                // put spaces in between barrier blocks
+		                                if(getBlock(x,floor-2) !=0 || getBlock(x,floor-3) != 0)
+		                                {
+		                                	WASTE++;
+		                                }
+		                                
+		                                //Don't build the blocks too high
+		                                if(floor <9)
+		                                {
+		                                	int wa=9 - floor;
+		                                	if (wa>0)
+		                                		WASTE+= wa;
+		                                }
+	                               
 	                            	}
+	                            	
 	                            }
 	                            else// 3/4 chance (1/4 overall)
 	                            {	//the fills a block with a hidden coin
 	                                if(floor < height-1)
 	                                {
 		                                setBlock(x, floor - 4, BLOCK_COIN);
-	                                	BLOCKS_COINS++;
+		                               
+		                                // if the space below is empty then it counts
+		                                if(getBlock(x,floor-3) == 0)
+		                                {
+		                                	BLOCKS_COINS++;
+		                                }else WASTE++;
+		                                
+		                                //don't box up coins
+		                                if(getBlock(x-1,floor-4) == COIN || getBlock(x,floor-5) == COIN|| getBlock(x,floor-3)== COIN)
+		                                {
+		                                	WASTE++;
+		                                }
+		                                
+		                                // don't make unjumpable block jumps
+		                                int c = -2;
+		                                while(floor+c < height)
+		                                {
+		                                	if(getBlock(x-1,floor+c)==0)
+		                                	{
+		                                		WASTE++;
+		                                	}else break;
+		                                	c++;
+		                                }
+		                                
+		                                // put spaces in between barrier blocks
+		                                if(getBlock(x,floor-2) !=0 || getBlock(x,floor-3) != 0)
+		                                {
+		                                	WASTE++;
+		                                }
+		                                
+		                                //Don't build the blocks too high
+		                                if(floor <9)
+		                                {
+		                                	int wa=9 - floor;
+		                                	if (wa>0)
+		                                		WASTE+= wa;
+		                                }
 	                                }else 
 	                                {
 	                                }
@@ -834,18 +968,118 @@ public class MyLevel extends Level{
 	                            if (random.nextInt(4) == 0)// (1/24 chance)
 	                            {
 	                            	// Random AF block, could be anything
-	                                setBlock(x, floor - 4, (byte) (2 + 1 * 16));
+	                            	if(floor < height-1)
+	                            		setBlock(x, floor - 4, (byte) (2 + 1 * 16));
+	                            	
+	                            	// don't box up coins
+	                                if(getBlock(x-1,floor-4) == COIN || getBlock(x,floor-5) == COIN|| getBlock(x,floor-3)== COIN)
+	                                {
+	                                	WASTE++;
+	                                }
+	                                
+	                                //don't make unjumpable blocks 
+	                                int c = -2;
+	                                while(floor+c < height)
+	                                {
+	                                	if(getBlock(x-1,floor+c)==0)
+	                                	{
+	                                		WASTE++;
+	                                	}else break;
+	                                	c++;
+	                                }
+	                                
+	                                // put spaces in between barrier blocks
+	                                if(getBlock(x,floor-2) !=0 || getBlock(x,floor-3) != 0)
+	                                {
+	                                	WASTE++;
+	                                }
+	                                
+	                                //Don't build the blocks too high
+	                                if(floor <9)
+	                                {
+	                                	int wa=9 - floor;
+	                                	if (wa>0)
+	                                		WASTE+= wa;
+	                                }
 	                            }
 	                            else // (1/8 chance)
 	                            {
 	                            	// Random AF block, could be anything
-	                                setBlock(x, floor - 4, (byte) (1 + 1 * 16));
+	                            	if(floor < height -1)
+	                            		setBlock(x, floor - 4, (byte) (1 + 1 * 16));
+	                            	
+	                            	// don't box up coins
+	                                if(getBlock(x-1,floor-4) == COIN || getBlock(x,floor-5) == COIN|| getBlock(x,floor-3)== COIN)
+	                                {
+	                                	WASTE++;
+	                                }
+	                                
+	                                //don't make unjumpable blocks
+	                                int c = -2;
+	                                while(floor+c < height)
+	                                {
+	                                	if(getBlock(x-1,floor+c)==0)
+	                                	{
+	                                		WASTE++;
+	                                	}else break;
+	                                	c++;
+	                                }
+	                                
+	                                // put spaces in between barrier blocks
+	                                if(getBlock(x,floor-2) !=0 || getBlock(x,floor-3) != 0)
+	                                {
+	                                	WASTE++;
+	                                }
+	                                
+	                                //Don't build the blocks too high
+	                                if(floor <9)
+	                                {
+	                                	int wa=9 - floor;
+	                                	if (wa>0)
+	                                		WASTE+= wa;
+	                                }
 	                            }
 	                        }
 	                        else //(1/2)
 	                        {
 	                            setBlock(x, floor - 4, BLOCK_EMPTY);
-                            	BLOCKS_EMPTY++;
+                                
+	                            // if the space below is empty then it counts
+                                if(getBlock(x,floor-3) == 0)
+                                {
+                                	BLOCKS_EMPTY++;
+                                }else WASTE++;
+                                
+                                //don't box up coins
+                                if(getBlock(x-1,floor-4) == COIN || getBlock(x,floor-5) == COIN || getBlock(x,floor-3)== COIN)
+                                {
+                                	WASTE++;
+                                }
+                                
+                                //don't make unjumpable blocks
+                                int c = -2;
+                                while(floor+c < height)
+                                {
+                                	if(getBlock(x-1,floor+c)==0)
+                                	{
+                                		WASTE++;
+                                	}else break;
+                                	c++;
+                                }
+                                
+                                // put spaces in between barrier blocks
+                                if(getBlock(x,floor-2) !=0 || getBlock(x,floor-3) != 0)
+                                {
+                                	WASTE++;
+                                }
+                                
+                                //Don't build the blocks too high
+                                if(floor <9)
+                                {
+                                	int wa=9 - floor;
+                                	if (wa>0)
+                                		WASTE+= wa;
+                                }
 	                        }
 	                    }
 	                }
