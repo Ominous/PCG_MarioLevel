@@ -131,7 +131,7 @@ public class MyLevel extends Level{
          * totalCoins; //total number of coins
          * 
      * Jumper:
-         * aimlessJumps; //number of jumps without a reason
+         * aimlessJumps; //total jumps - (stomp kills + coinblocks destroyed + power up destroyed + empty blocks destroyed)
          * jumpsNumber; // total number of jumps
          * 
      * Too Specific:
@@ -205,7 +205,7 @@ public class MyLevel extends Level{
 	        float percentEnemiesKilled = totalEnemiesKilled/(float)playerData.totalEnemies;
 	        float percentKilledByFire = playerData.enemyKillByFire/(float)totalEnemiesKilled;
 	        
-	        if(percentKilledByFire >= 0.4 || percentEnemiesKilled >= 0.5)
+	        if(percentKilledByFire >= 0.2 || percentEnemiesKilled >= 0.7)
 	        {
 		         /*	Killer Smoothing:
 			         *	if the player killed more goombas put in more goombas
@@ -222,7 +222,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_CANNONS] += 1;
 		        playerCode[0] = true;
 	        }
-	        System.out.println("killed with fire: "+percentKilledByFire + " killed in general: "+percentEnemiesKilled);
+	        System.out.println("killed with fire: "+percentKilledByFire + " killed in general: "+percentEnemiesKilled + " total enemies killes: "+ totalEnemiesKilled);
 	              
 	        // Is the player a collector?
 	        
@@ -244,16 +244,18 @@ public class MyLevel extends Level{
 		        playerCode[1] = true;
 	        }
 	        System.out.println("blocks destroyed: "+ playerData.percentageBlocksDestroyed+ " percent coins collected: "+percentageCoinsCollected);
+	        System.out.println("coinsCollected: "+ playerData.coinsCollected + " coinblocks destroyed: "+playerData.coinBlocksDestroyed);
 	        
 	        // Is the player a jumper?
 	        
 	        // If the percentage of aimless jumps is greater that .3
-	        float percentageAimlessJumps = (float)playerData.aimlessJumps/(float)playerData.jumpsNumber;
-	        if(percentageAimlessJumps >= 0.8)
+	        float percentageAimlessJumps = (float)(playerData.aimlessJumps) /((float)playerData.jumpsNumber);
+	        if(percentageAimlessJumps >= 0.8 && playerData.jumpsNumber > 80)
 	        {
 	        	/*	Jumper Smoothing:
 	        	 * 
 	        	 */
+		        odds[ODDS_CANNONS] += 1;
 		        odds[ODDS_STRAIGHT] += 0;
 		        odds[ODDS_HILL_STRAIGHT] += 5;
 		        odds[ODDS_TUBES] += 5;
@@ -279,7 +281,6 @@ public class MyLevel extends Level{
 	            {
 	                odds[i] = 0;
 	            }
-	            System.out.println("Cannons:? "+odds[ODDS_CANNONS]);
 
 	            // add up all numbers from inside the chance array
 	            totalOdds += odds[i];
@@ -327,19 +328,22 @@ public class MyLevel extends Level{
         			int k = 0;
 			        while (length < width - 64)
 			        {
+
 			            //If the level keeps this piece placement
-			        	if(localPeakLibrary[k]!=0 && (mutatedGene>-1 && k == mutatedGene))
+			        	if(k < localPeakLibrary.length && localPeakLibrary[k]!=0 && (mutatedGene>-1 && k == mutatedGene))
 			        	{
 			        		length += localPeakLibrary[k];
 			        		levelLibrary[k] = localPeakLibrary[k];
 
 			        	}else 
 			        	{
-				        	//If the level throws out previous piece for a random one				            	
+				        	//If the level throws out previous piece for a random one
 			        		int pieceOfLevel = buildZone(length, width - length);
 			        		//int pieceOfLevel = buildStraight(length,width-length, false);
 				            length += pieceOfLevel;
-				            levelLibrary[k] = pieceOfLevel;
+				            
+				            if(k < localPeakLibrary.length)
+				            	levelLibrary[k] = pieceOfLevel;
 				            
 			        	}
 			            k++;
@@ -628,7 +632,7 @@ public class MyLevel extends Level{
 	        {
 	            h = h - 2 - random.nextInt(3);
 
-	            if (h <= 0)
+	            if (h <= 2)
 	            {
 	                keepGoing = false;
 	            }
@@ -854,8 +858,22 @@ public class MyLevel extends Level{
 	                for(int x = xStart + 1 + s; x < xLength - 1 - e; x++){
 	                	if(getBlock(x-1,floor-2)!=0)
 	                		WASTE++;
-	                    setBlock(x, floor - 2, COIN);
-	                    COINS++;
+	                	
+	                	Boolean tooHigh = true;
+	                	for(int i = 0; i < 3; i++)
+	                	{
+	                		if(getBlock(x, floor-3-i)!=COIN && getBlock(x,floor-3-i)!=0)
+	                		{
+	                			tooHigh = false;
+	                			break;
+	                		}
+	                	}
+	                	
+	                	if(!tooHigh)
+	                	{
+	                		setBlock(x, floor - 2, COIN);
+	                		COINS++;
+	                	}
 	                }
 	            }
 	        }
@@ -873,7 +891,7 @@ public class MyLevel extends Level{
 	                    if (rocks)
 	                    {
 	                    	// if s is greater than 0 && x+xStart+1 < xLenghth - 2 && 1/3 chance
-                        	int chance1 = 2187;
+                        	int chance1 = 2187; // too low
                         	for(int i = floor-3; i< height; i++)
                         	{
                         		if(getBlock(x,i)== 0 || getBlock(x,i) == COIN)
@@ -950,7 +968,16 @@ public class MyLevel extends Level{
 	                            }
 	                            else// 3/4 chance (1/4 overall)
 	                            {	//the fills a block with a hidden coin
-	                                if(floor < height-1)
+	        	                	Boolean tooHigh = true;
+	        	                	for(int i = 0; i < 3; i++)
+	        	                	{
+	        	                		if(getBlock(x-1, floor-3-i)!=COIN && getBlock(x-1,floor-3-i)!=0 && getBlock(x-2, floor-3-i)!=COIN && getBlock(x-2,floor-3-i)!=0)
+	        	                		{
+	        	                			tooHigh = false;
+	        	                			break;
+	        	                		}
+	        	                	}
+	                                if(floor < height-1 && !tooHigh)
 	                                {
 		                                setBlock(x, floor - 4, BLOCK_COIN);
 		                               
@@ -995,12 +1022,21 @@ public class MyLevel extends Level{
 	                                }
 	                            }
 	                        }
-	                        else if (random.nextInt(chance2) == 0)// (1/6 chance)
+	                        else if (random.nextInt(chance2) == 0)// (1/6 chance) // too small
 	                        {
 	                            if (random.nextInt(chance2) == 0)// (1/24 chance)
 	                            {
+	        	                	Boolean tooHigh = true;
+	        	                	for(int i = 0; i < 3; i++)
+	        	                	{
+	        	                		if(getBlock(x-1, floor-3-i)!=COIN && getBlock(x-1,floor-3-i)!=0 && getBlock(x-2, floor-3-i)!=COIN && getBlock(x-2,floor-3-i)!=0)
+	        	                		{
+	        	                			tooHigh = false;
+	        	                			break;
+	        	                		}
+	        	                	}
 	                            	// Random AF block, could be anything
-	                            	if(floor < height-1)
+	                            	if(floor < height-1 && !tooHigh)
 	                            		setBlock(x, floor - 4, (byte) (2 + 1 * 16));
 	                            	
 	                            	// don't box up coins
@@ -1036,8 +1072,17 @@ public class MyLevel extends Level{
 	                            }
 	                            else // (1/8 chance)
 	                            {
+	        	                	Boolean tooHigh = true;
+	        	                	for(int i = 0; i < 3; i++)
+	        	                	{
+	        	                		if(getBlock(x-1, floor-3-i)!=COIN && getBlock(x-1,floor-3-i)!=0 && getBlock(x-2, floor-3-i)!=COIN && getBlock(x-2,floor-3-i)!=0)
+	        	                		{
+	        	                			tooHigh = false;
+	        	                			break;
+	        	                		}
+	        	                	}
 	                            	// Random AF block, could be anything
-	                            	if(floor < height -1)
+	                            	if(floor < height -1 || !tooHigh)
 	                            		setBlock(x, floor - 4, (byte) (1 + 1 * 16));
 	                            	
 	                            	// don't box up coins
@@ -1074,7 +1119,19 @@ public class MyLevel extends Level{
 	                        }
 	                        else if(chance2 ==1)
 	                        {
-	                            setBlock(x, floor - 4, BLOCK_EMPTY);
+        	                	Boolean tooHigh = true;
+        	                	for(int i = 0; i < 3; i++)
+        	                	{
+        	                		if(getBlock(x-1, floor-3-i)!=COIN && getBlock(x-1,floor-3-i)!=0 && getBlock(x-2, floor-3-i)!=COIN && getBlock(x-2,floor-3-i)!=0)
+        	                		{
+        	                			tooHigh = false;
+        	                			break;
+        	                		}
+        	                	}
+        	                	if(!tooHigh)
+        	                	{
+        	                		setBlock(x, floor - 4, BLOCK_EMPTY);
+        	                	}
                                 
 	                            // if the space below is empty then it counts
                                 if(getBlock(x,floor-3) == 0)
