@@ -179,6 +179,8 @@ public class MyLevel extends Level{
 	    {
 	        this.type = type;
 	        this.difficulty = difficulty;
+	        
+	        difficulty = 1;
 
 	        lastSeed = seed;
 	        random = new Random(seed);
@@ -203,7 +205,7 @@ public class MyLevel extends Level{
 	        float percentEnemiesKilled = totalEnemiesKilled/(float)playerData.totalEnemies;
 	        float percentKilledByFire = playerData.enemyKillByFire/(float)totalEnemiesKilled;
 	        
-	        if(percentKilledByFire >= 0.8 || percentEnemiesKilled >= 0.8)
+	        if(percentKilledByFire >= 0.4 || percentEnemiesKilled >= 0.5)
 	        {
 		         /*	Killer Smoothing:
 			         *	if the player killed more goombas put in more goombas
@@ -220,6 +222,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_CANNONS] += 1;
 		        playerCode[0] = true;
 	        }
+	        System.out.println("killed with fire: "+percentKilledByFire + " killed in general: "+percentEnemiesKilled);
 	              
 	        // Is the player a collector?
 	        
@@ -240,6 +243,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_CANNONS] += 0;
 		        playerCode[1] = true;
 	        }
+	        System.out.println("blocks destroyed: "+ playerData.percentageBlocksDestroyed+ " percent coins collected: "+percentageCoinsCollected);
 	        
 	        // Is the player a jumper?
 	        
@@ -257,6 +261,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_CANNONS] -=3;
 		        playerCode[2] = true;
 	        }
+	        System.out.println("percent aimless jumps: "+ percentageAimlessJumps + " jumps total: "+playerData.jumpsNumber);
 	        
 	        /* Create Customized odds here:
 	         *
@@ -356,7 +361,7 @@ public class MyLevel extends Level{
 			        	currentRating+= 2*ENEMIES;
 			        }
 			        
-			        playerCode[1]= true;
+			        //playerCode[1]= true;
 			        if(playerCode[1])
 			        {
 			        	currentRating+= 3*COINS;
@@ -678,7 +683,9 @@ public class MyLevel extends Level{
 	    {
 	        for (int x = x0; x < x1; x++)
 	        {
-	            if (random.nextInt(35) < difficulty + 1)
+	        	int monsterChance = 1000;
+	        	if (playerCode[0]) monsterChance = 400;
+	            if (random.nextInt(monsterChance) < difficulty + 1)
 	            {
 	                int type = random.nextInt(4);
 
@@ -866,9 +873,34 @@ public class MyLevel extends Level{
 	                    if (rocks)
 	                    {
 	                    	// if s is greater than 0 && x+xStart+1 < xLenghth - 2 && 1/3 chance
-	                        if (x != xStart + 1 && x != xLength - 2 && random.nextInt(3) == 0)
+                        	int chance1 = 2187;
+                        	for(int i = floor-3; i< height; i++)
+                        	{
+                        		if(getBlock(x,i)== 0 || getBlock(x,i) == COIN)
+                        		{
+                        			chance1 = chance1/3;
+                        		}
+                        	}
+                        	int chance2 = 128;
+                        	for(int i = floor-3; i< height; i++)
+                        	{
+                        		if(getBlock(x,i)== 0|| getBlock(x,i) == COIN)
+                        		{
+                        			chance2 = chance2/2;
+                        		}
+                        	}
+                        	//System.out.println("chance1: "+chance1);
+	                        if (x != xStart + 1 && x != xLength - 2 && random.nextInt(chance1) == 0)
 	                        {
 	                        	// 1/4 chance (1/12 overall)
+	                        	int chance = 128;
+	                        	for(int i = floor-3; i< height; i++)
+	                        	{
+	                        		if(getBlock(x,i)== 0|| getBlock(x,i) == COIN)
+	                        		{
+	                        			chance = chance/2;
+	                        		}
+	                        	}
 	                            if (random.nextInt(4) == 0)
 	                            {
 
@@ -963,9 +995,9 @@ public class MyLevel extends Level{
 	                                }
 	                            }
 	                        }
-	                        else if (random.nextInt(4) == 0)// (1/6 chance)
+	                        else if (random.nextInt(chance2) == 0)// (1/6 chance)
 	                        {
-	                            if (random.nextInt(4) == 0)// (1/24 chance)
+	                            if (random.nextInt(chance2) == 0)// (1/24 chance)
 	                            {
 	                            	// Random AF block, could be anything
 	                            	if(floor < height-1)
@@ -1040,7 +1072,7 @@ public class MyLevel extends Level{
 	                                }
 	                            }
 	                        }
-	                        else //(1/2)
+	                        else if(chance2 ==1)
 	                        {
 	                            setBlock(x, floor - 4, BLOCK_EMPTY);
                                 
