@@ -46,6 +46,10 @@ public class MyLevel extends Level{
 	private int localLevelRatingPeak = 0;
 	private int globalPeakLevel; // The highest rated Level holder
 	private int localPeakLevel; // highest rated Level in the sample holder
+	private byte[][] globalPeakLevelMap;
+	private byte[][] localPeakLevelMap;
+	private SpriteTemplate[][] globalPeakSpriteTemplates;
+	private SpriteTemplate[][] localPeakSpriteTemplates;
 	private int[] levelLibrary = new int[width]; // library of points in the level where a pattern was created
 	private int[] localPeakLibrary = new int[width]; // library of points in the level where a pattern was created in the local Max Level
 	
@@ -193,7 +197,7 @@ public class MyLevel extends Level{
 	        odds[ODDS_JUMP] = 12;
 	        odds[ODDS_CANNONS] = 1;
 	        
-	      
+	        
 	        // Determine Player's play style
 	        
 	        // Is the player a killer?
@@ -225,7 +229,6 @@ public class MyLevel extends Level{
 	        System.out.println("killed with fire: "+percentKilledByFire + " killed in general: "+percentEnemiesKilled + " total enemies killes: "+ totalEnemiesKilled);
 	              
 	        // Is the player a collector?
-	        
 	        
 	        // If the percentage of blocks destroyed is high
 	        // If the percentage of coins collected is over .8
@@ -286,7 +289,6 @@ public class MyLevel extends Level{
 	            totalOdds += odds[i];
 	        }
 	        
-	        
 	        //create the start location
 	        int length = 0;
 	        
@@ -294,7 +296,30 @@ public class MyLevel extends Level{
 	        for(int i = 0; i<N; i++)
 	        {
 	        	// Reset back to empty level
-	        	length = buildStraight(0, width, true);            		// Create beginning of level    	
+	        	for(int k=0;k<width;k++)
+	        	{
+	        		for(int j=0; j<height;j++)
+	        		{
+	        			setBlock(k,j,(byte)0);
+	        			if(getSpriteTemplate(k,j) != null)
+	        				getSpriteTemplate(k,j).isDead = true;
+	        		}
+	        	}
+	        	length = buildStraight(0, width, true, true);            		// Create beginning of level    
+	        	
+	        	
+	        	/*
+	        	for(int x=0;x<width;x++)
+	        	{
+		        	setBlock(x,9,BLOCK_EMPTY);
+	        	}
+	        	*/
+	        	setBlock(5,5,BLOCK_EMPTY);
+	        	setBlock(4,5-1,BLOCK_EMPTY);
+	        	setBlock(3,5-2,BLOCK_EMPTY);
+
+
+	        	
 	        	levelLibrary = new int[width];							// Create empty library of patterns in level
 	        	int librarySize = 0;
 	        	int currentRating = 0;									// Create current Rating of level made
@@ -312,8 +337,19 @@ public class MyLevel extends Level{
 	        		// set the new rating to beat
 	        		localLevelRatingPeak = currentRating;
 	        		
+	        		
 		        	// Set new localPeak and library
 		        	localPeakLevel = length;
+		        	//localPeakLevelMap = getMap().clone();
+		        	localPeakLevelMap = new byte[width][height];
+		        	for(int x = 0;x<width;x++)
+		        	{
+		        		for(int y=0;y<height;y++)
+		        		{
+		        			localPeakLevelMap[x][y] = this.getBlock(x, y);
+		        		}
+		        	}
+		        	localPeakSpriteTemplates = getSpriteTemplates().clone();
 		        	localPeakLibrary = levelLibrary.clone();
 		        	
 		        	currentRating = 0;
@@ -330,20 +366,32 @@ public class MyLevel extends Level{
 			        {
 
 			            //If the level keeps this piece placement
-			        	if(k < localPeakLibrary.length && localPeakLibrary[k]!=0 && (mutatedGene>-1 && k == mutatedGene))
+			        	if(k < localPeakLibrary.length && localPeakLibrary[k]!=0 && (mutatedGene>-1 && k != mutatedGene))
 			        	{
+			        		for(int x = length; x<localPeakLibrary[k]+length; x++)
+			        		{
+			        			for(int y =0;y<height;y++)
+			        			{
+			        				setBlock(x,y,localPeakLevelMap[x][y]);
+			        			}
+			        		}
 			        		length += localPeakLibrary[k];
+			        		
 			        		levelLibrary[k] = localPeakLibrary[k];
+			        		
 
 			        	}else 
 			        	{
+			        		
 				        	//If the level throws out previous piece for a random one
-			        		int pieceOfLevel = buildZone(length, width - length);
+			        		int pieceOfLevel = buildZone(length, width - length, true);
+			        		
 			        		//int pieceOfLevel = buildStraight(length,width-length, false);
 				            length += pieceOfLevel;
 				            
 				            if(k < localPeakLibrary.length)
 				            	levelLibrary[k] = pieceOfLevel;
+				            
 				            
 			        	}
 			            k++;
@@ -402,11 +450,53 @@ public class MyLevel extends Level{
 	        	{
 		        	globalLevelRatingPeak = localLevelRatingPeak;
 		        	globalPeakLevel = localPeakLevel;
+		        	
+		        	//globalPeakLevelMap = localPeakLevelMap.clone();
+		        	globalPeakLevelMap = new byte[width][height];
+		        	for(int x = 0;x<width;x++)
+		        	{
+		        		for(int y=0;y<height;y++)
+		        		{
+		        			globalPeakLevelMap[x][y] = localPeakLevelMap[x][y];
+		        		}
+		        	}
+		        	globalPeakSpriteTemplates = localPeakSpriteTemplates.clone();
+		        	System.out.println("before "+globalPeakLevelMap[13][height-1]);
 	        	}    	
 	        }
 	        // set best scored level
         	System.out.println("final: "+globalLevelRatingPeak);
+	        
+        	System.out.println("before "+globalPeakLevelMap[13][height-1]);
+
+        	for(int k=0;k<width;k++)
+        	{
+        		for(int j=0; j<height;j++)
+        		{
+        			setBlock(k,j,(byte)0);
+        			if(getSpriteTemplate(k,j) != null)
+        				getSpriteTemplate(k,j).isDead = true;
+        		}
+        	}
+
+        	//length = buildStraight(0, width, true, true);
 	        length = globalPeakLevel;
+
+	        for(int x =0; x <width;x++)
+	        {
+	        	for(int y = 0; y<height; y++)
+	        	{
+	        		/*
+	        		if(x==13 && y==height-1)
+	        			System.out.println("after "+ globalPeakLevelMap[x][y]);
+	        		*/
+	        		setBlock(x,y,globalPeakLevelMap[x][y]);
+	        		if(globalPeakSpriteTemplates[x][y] != null)
+	        		{
+	        			setSpriteTemplate(x,y,globalPeakSpriteTemplates[x][y]);
+	        		}
+	        	}
+	        }
 	        
 	        //set the end piece
 	        int floor = height - 1 - random.nextInt(4);
@@ -452,57 +542,90 @@ public class MyLevel extends Level{
 
 	    }
 	    
-	    private int buildZone(int x, int maxLength) {
+	    private int buildZone(int x, int maxLength, Boolean cleanse) {
 	        int t = random.nextInt(totalOdds);
 	        int type = 0;
 
 	        for (int i = 0; i < odds.length; i++) 
 	        {
 	        	// if the odds of jump are good enough then grab it first
-	            if(odds[ODDS_JUMP] > t*2)
+	            if(odds[ODDS_JUMP] > t)
 	            {
 	            	type = ODDS_JUMP;
 	            	break;
 	            }
 	            
+	            //System.out.println("i: "+i+" odds[i]: "+odds[i]+ " t: "+t);
+	            
 	            // if the odds of jump are not good enough then grab whatever you can
-	        	if (odds[i] <= t) 
+	        	if (odds[i] > t) 
 	        	{
 	                type = i;
+	                
 	                break;
 	            }
+	        	
+	        	int nTotal = 0;
+                for(int j = i;j>=0;j--)
+                {
+                	nTotal += odds[j];
+                }
+                //System.out.println("nTotal: "+ nTotal +" totalodds: "+totalOdds);
+                if(nTotal<totalOdds)
+                	t = random.nextInt(totalOdds-nTotal);
+                else if(i+1<odds.length)
+                	t = random.nextInt(2*odds[i+1]);
 	        }
+	        
+	        //System.out.println(type);
 
+	        cleanse = false;
 	        switch (type) {
 	        case ODDS_STRAIGHT:
-	            return buildStraight(x, maxLength, false);
+	            return buildStraight(x, maxLength, true, cleanse);
 	        case ODDS_HILL_STRAIGHT:
-	            return buildHillStraight(x, maxLength);
+	            return buildStraight(x,maxLength,true, cleanse);
 	        case ODDS_TUBES:
-	            return buildTubes(x, maxLength);
+	            return buildTubes(x, maxLength, cleanse);
 	        case ODDS_JUMP:
 	            if (gaps < Constraints.gaps)
-	                return buildJump(x, maxLength);
+	                return buildStraight(x, maxLength,true, cleanse);
 	            else
-	                return buildStraight(x, maxLength, false);
+	                return buildStraight(x, maxLength, true, cleanse);
 	        case ODDS_CANNONS:
-	            return buildCannons(x, maxLength);
+	            return buildCannons(x, maxLength, cleanse);
 	        }
 	        return 0;
 	    }
 
 
-	    private int buildJump(int xo, int maxLength)
+	    private int buildJump(int xo, int maxLength, Boolean cleanse)
 	    {	gaps++;
 	    	//jl: jump length
 	    	//js: the number of blocks that are available at either side for free
 	        int js = random.nextInt(4) + 2;
 	        int jl = random.nextInt(2) + 2;
 	        int length = js * 2 + jl;
+	        
+	        int floor = height - 1 - random.nextInt(4);
+
+	        
+	        if(cleanse)
+	        {
+	        	for(int x = xo; x<xo+length; x++)
+	        	{
+	        		for(int y=0; y<height; y++)
+	        		{
+	        			if(y>=floor)
+	        			{
+	        				setBlock(x,y,(byte)0);
+	        			}
+	        		}
+	        	}
+	        }
 
 	        boolean hasStairs = random.nextInt(3) == 0;
 
-	        int floor = height - 1 - random.nextInt(4);
 	      //run from the start x position, for the whole length
 	        for (int x = xo; x < xo + length; x++)
 	        {
@@ -541,13 +664,28 @@ public class MyLevel extends Level{
 	        return length;
 	    }
 
-	    private int buildCannons(int xo, int maxLength)
+	    private int buildCannons(int xo, int maxLength, Boolean cleanse)
 	    {
+	        int[] xcoordinates = new int[maxLength*height];
+	        int[] ycoordinates = new int[maxLength*height];
+	        int a = 0;
+	        
 	    	ENEMIES++;
 	        int length = random.nextInt(10) + 2;
 	        if (length > maxLength) length = maxLength;
 
 	        int floor = height - 1 - random.nextInt(4);
+	        
+	        if(cleanse)
+	        {
+	        	for(int x = xo; x<xo+length; x++)
+	        	{
+	        		for(int y=0; y < floor; y++)
+	        		{
+	        			setBlock(x,y,(byte)0);
+	        		}
+	        	}
+	        }
 	        int xCannon = xo + 1 + random.nextInt(4);
 	        for (int x = xo; x < xo + length; x++)
 	        {
@@ -604,12 +742,26 @@ public class MyLevel extends Level{
 	        return length;
 	    }
 
-	    private int buildHillStraight(int xo, int maxLength)
+	    private int buildHillStraight(int xo, int maxLength, Boolean cleanse)
 	    {
 	        int length = random.nextInt(10) + 10;
 	        if (length > maxLength) length = maxLength;
+	        int[] xcoordinates = new int[maxLength*height];
+	        int[] ycoordinates = new int[maxLength*height];
+	        int a = 0;
 
 	        int floor = height - 1 - random.nextInt(4);
+	        
+	        if(cleanse)
+	        {
+	        	for(int x = xo; x<xo+length; x++)
+	        	{
+	        		for(int y=0; y < floor; y++)
+	        		{
+	        			setBlock(x,y,(byte)0);
+	        		}
+	        	}
+	        }
 	        for (int x = xo; x < xo + length; x++)
 	        {
 	            for (int y = 0; y < height; y++)
@@ -617,6 +769,9 @@ public class MyLevel extends Level{
 	                if (y >= floor)
 	                {
 	                    setBlock(x, y, GROUND);
+	                    xcoordinates[a] = x;
+	                    ycoordinates[a] = y;
+	                    a++;
 	                }
 	            }
 	        }
@@ -668,11 +823,14 @@ public class MyLevel extends Level{
 	                            if (getBlock(x, y) == 0)
 	                            {
 	                                setBlock(x, y, (byte) (xx + yy * 16));
+	                                xcoordinates[a] = x; 
+	                                ycoordinates[a]=y; 
+	                                a++;
 	                            }
 	                            else
 	                            {
-	                                if (getBlock(x, y) == HILL_TOP_LEFT) setBlock(x, y, HILL_TOP_LEFT_IN);
-	                                if (getBlock(x, y) == HILL_TOP_RIGHT) setBlock(x, y, HILL_TOP_RIGHT_IN);
+	                                if (getBlock(x, y) == HILL_TOP_LEFT) {setBlock(x, y, HILL_TOP_LEFT_IN); xcoordinates[a] = x; ycoordinates[a]=y; a++;}
+	                                if (getBlock(x, y) == HILL_TOP_RIGHT){setBlock(x, y, HILL_TOP_RIGHT_IN); xcoordinates[a] = x; ycoordinates[a]=y; a++;}
 	                            }
 	                        }
 	                    }
@@ -710,12 +868,26 @@ public class MyLevel extends Level{
 	        }
 	    }
 
-	    private int buildTubes(int xo, int maxLength)
+	    private int buildTubes(int xo, int maxLength, boolean cleanse)
 	    {
+	        int[] xcoordinates = new int[maxLength*height];
+	        int[] ycoordinates = new int[maxLength*height];
+	        int a = 0;
 	        int length = random.nextInt(10) + 5;
 	        if (length > maxLength) length = maxLength;
 
 	        int floor = height - 1 - random.nextInt(4);
+	        
+	        if(cleanse)
+	        {
+	        	for(int x = xo; x < xo+length; x++)
+	        	{
+	        		for(int y = 0; y< height; y++)
+	        		{
+	        			setBlock(x,y,(byte)0);
+	        		}
+	        	}
+	        }
 	        int xTube = xo + 1 + random.nextInt(4);
 	        int tubeHeight = floor - random.nextInt(2) - 2;
 	        for (int x = xo; x < xo + length; x++)
@@ -740,8 +912,17 @@ public class MyLevel extends Level{
 	            	if(y>= floor)
 	            	{
 	            		if(getBlock(x,y)!=0)
+	            		{
+	            			for(int i= 0; i<xcoordinates.length; i++)
+	            			{
+	            				setBlock(xcoordinates[i],ycoordinates[i],(byte)0);
+	            			}
 	            			return 0;
+	            		}
 	                    setBlock(x, y,GROUND);
+	                    xcoordinates[a] = x;
+	                    ycoordinates[a] = y;
+	                    a++;
 	            	}else
 	            	{
 	            		if((x== xTube || x== xTube +1) && y>=tubeHeight)
@@ -751,12 +932,22 @@ public class MyLevel extends Level{
 	            			{
 	            				if(getBlock(x,y)!=0)
 	            				{
+	    	            			for(int i= 0; i<xcoordinates.length; i++)
+	    	            			{
+	    	            				setBlock(xcoordinates[i],ycoordinates[i],(byte)0);
+	    	            			}
 	            					return 0;
 	            				}
 	            			}else 
 	            			{
 	            				if(getBlock(x,y)!=0)
+	            				{
+	    	            			for(int i= 0; i<xcoordinates.length; i++)
+	    	            			{
+	    	            				setBlock(xcoordinates[i],ycoordinates[i],(byte)0);
+	    	            			}
 	            					return 0;
+	            				}
 	            			}
 	            		}
 	            	}
@@ -767,7 +958,9 @@ public class MyLevel extends Level{
 	                if (y >= floor)
 	                {
 	                    setBlock(x, y,GROUND);
-
+	                    xcoordinates[a] = x;
+	                    ycoordinates[a] = y;
+	                    a++;
 	                }
 	                else
 	                {
@@ -781,7 +974,17 @@ public class MyLevel extends Level{
 	                        	if(getBlock(x,y)==0)
 	                        	{
 	                        		setBlock(x, y, (byte) (xPic + 0 * 16));
-	                        	}else return 0;
+	        	                    xcoordinates[a] = x;
+	        	                    ycoordinates[a] = y;
+	        	                    a++;
+	                        	}else
+	                        	{
+	    	            			for(int i= 0; i<xcoordinates.length; i++)
+	    	            			{
+	    	            				setBlock(xcoordinates[i],ycoordinates[i],(byte)0);
+	    	            			}
+	                        		return 0;
+	                        	}
 	                        		
 	                        }
 	                        else
@@ -790,7 +993,17 @@ public class MyLevel extends Level{
 	                        	if(getBlock(x,y)==0)
 	                        	{
 	                        		setBlock(x, y, (byte) (xPic + 1 * 16));
-	                        	}else return 0;
+	        	                    xcoordinates[a] = x;
+	        	                    ycoordinates[a] = y;
+	        	                    a++;
+	                        	}else
+	                        	{
+	    	            			for(int i= 0; i<xcoordinates.length; i++)
+	    	            			{
+	    	            				setBlock(xcoordinates[i],ycoordinates[i],(byte)0);
+	    	            			}
+	                        		return 0;
+	                        	}
 	                        }
 	                    }
 	                }
@@ -800,7 +1013,7 @@ public class MyLevel extends Level{
 	        return length;
 	    }
 
-	    private int buildStraight(int xo, int maxLength, boolean safe)
+	    private int buildStraight(int xo, int maxLength, boolean safe, boolean cleanse)
 	    {
 	        int length = random.nextInt(10) + 2;
 
@@ -814,6 +1027,15 @@ public class MyLevel extends Level{
 
 	        int floor = height - 1 - random.nextInt(4);
 
+	        /*
+	        for(int x=xo; x<xo+length; x++)
+	        {
+	        	for(int y = 0; y<floor;y++)
+	        	{
+	        		setBlock(x,y,(byte)0);
+	        	}
+	        }
+	        */
 	        //runs from the specified x position to the length of the segment
 	        for (int x = xo; x < xo + length; x++)
 	        {
@@ -899,6 +1121,10 @@ public class MyLevel extends Level{
                         			chance1 = chance1/3;
                         		}
                         	}
+                        	if(chance1<=0)
+                        	{
+                        		chance1 = 1;
+                        	}
                         	int chance2 = 128;
                         	for(int i = floor-3; i< height; i++)
                         	{
@@ -907,6 +1133,8 @@ public class MyLevel extends Level{
                         			chance2 = chance2/2;
                         		}
                         	}
+                        	if (chance2<=0)
+                        		chance2 = 1;
                         	//System.out.println("chance1: "+chance1);
 	                        if (x != xStart + 1 && x != xLength - 2 && random.nextInt(chance1) == 0)
 	                        {
@@ -918,6 +1146,10 @@ public class MyLevel extends Level{
 	                        		{
 	                        			chance = chance/2;
 	                        		}
+	                        	}
+	                        	if(chance<=0)
+	                        	{
+	                        		chance =1;
 	                        	}
 	                            if (random.nextInt(4) == 0)
 	                            {
