@@ -185,7 +185,6 @@ public class MyLevel extends Level{
 	        this.type = type;
 	        this.difficulty = difficulty;
 	        
-	        difficulty = 10;
 
 	        lastSeed = seed;
 	        random = new Random(seed);
@@ -226,6 +225,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_JUMP] += 0;
 		        odds[ODDS_CANNONS] += 1;
 		        playerCode[0] = true;
+		        difficulty = 25;
 	        }
 	        System.out.println("killed with fire: "+percentKilledByFire + " killed in general: "+percentEnemiesKilled + " total enemies killes: "+ totalEnemiesKilled);
 	              
@@ -246,6 +246,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_JUMP] += 0;
 		        odds[ODDS_CANNONS] += 0;
 		        playerCode[1] = true;
+		        difficulty = difficulty/4;
 	        }
 	        System.out.println("blocks destroyed: "+ playerData.percentageBlocksDestroyed+ " percent coins collected: "+percentageCoinsCollected);
 	        System.out.println("coinsCollected: "+ playerData.coinsCollected + " coinblocks destroyed: "+playerData.coinBlocksDestroyed);
@@ -266,6 +267,7 @@ public class MyLevel extends Level{
 		        odds[ODDS_JUMP] =+ 5;
 		        odds[ODDS_CANNONS] -=3;
 		        playerCode[2] = true;
+		        difficulty = difficulty/2;
 	        }
 	        System.out.println("percent aimless jumps: "+ percentageAimlessJumps + " jumps total: "+playerData.jumpsNumber);
 	        
@@ -999,7 +1001,7 @@ public class MyLevel extends Level{
 	        for (int x = x0; x < x1; x++)
 	        {
 	        	int monsterChance = 1000;
-	        	if (playerCode[0]) monsterChance = 400;
+	        	if (playerCode[0]) monsterChance = 35;
 	            if (random.nextInt(monsterChance) < difficulty + 1)
 	            {
 	                int type = random.nextInt(4);
@@ -1282,6 +1284,9 @@ public class MyLevel extends Level{
                         		chance1 = 1;
                         	}
                         	int chance2 = 128;
+                        	if(playerCode[2]==true)
+                        		chance2 = 32;
+                        	
                         	for(int i = floor-3; i< height; i++)
                         	{
                         		if(getBlock(x,i)== 0|| getBlock(x,i) == COIN)
@@ -1410,7 +1415,7 @@ public class MyLevel extends Level{
 	                                }
 	                            }
 	                        }
-	                        else if (random.nextInt(chance2) == 0)// (1/6 chance) // too small
+	                        else if (false/*random.nextInt(chance2) == 0*/)// (1/6 chance) // too small
 	                        {
 	                            if (random.nextInt(chance2) == 0)// (1/24 chance)
 	                            {
@@ -1516,11 +1521,16 @@ public class MyLevel extends Level{
         	                			break;
         	                		}
         	                	}
+        	                	/*
         	                	if(!tooHigh)
         	                	{
+        	                	*/
         	                		setBlock(x, floor - 4, BLOCK_EMPTY);
+                                	BLOCKS_EMPTY++;
+
+        	                	/*
         	                	}
-                                
+                                */
 	                            // if the space below is empty then it counts
                                 if(getBlock(x,floor-3) == 0)
                                 {
