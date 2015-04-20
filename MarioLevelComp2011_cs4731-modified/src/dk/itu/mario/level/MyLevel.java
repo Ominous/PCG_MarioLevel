@@ -52,6 +52,7 @@ public class MyLevel extends Level{
 	private SpriteTemplate[][] localPeakSpriteTemplates;
 	private int[] levelLibrary = new int[width]; // library of points in the level where a pattern was created
 	private int[] localPeakLibrary = new int[width]; // library of points in the level where a pattern was created in the local Max Level
+
 	
 	private GamePlay playerData;
 	private boolean[] playerCode = new boolean[3]; // playerCode[0] = 0 or 1 if killer, playercode[1] = 0 or 1 if collector, playerCode[2] = 0 or 1 if jumper
@@ -184,7 +185,7 @@ public class MyLevel extends Level{
 	        this.type = type;
 	        this.difficulty = difficulty;
 	        
-	        difficulty = 1;
+	        difficulty = 10;
 
 	        lastSeed = seed;
 	        random = new Random(seed);
@@ -321,13 +322,22 @@ public class MyLevel extends Level{
 
 	        	
 	        	levelLibrary = new int[width];							// Create empty library of patterns in level
+	        	int[] localPeakLibraryCoins = new int[width];
+	        	int[] localPeakLibraryEnemies = new int[width];
+	        	int[] localPeakLibraryEBlocks = new int[width];
+	        	int[] localPeakLibraryPBlocks = new int[width];
+	        	int[] localPeakLibraryWaste = new int[width];
+
 	        	int librarySize = 0;
 	        	int currentRating = 0;									// Create current Rating of level made
 	        	
 	        	// With the empty level look for a local peak level
 	        	// If the level is a global peak it will replace the global peak level as the best level possible
+	        	int savedX = 0;
+	        	int savedY = 0;
 	        	do
 	        	{
+	        		//System.out.println("yea");
 	        		ENEMIES = 0; //the number of enemies the level contains
 	        		BLOCKS_EMPTY = 0; // the number of empty blocks
 	        		BLOCKS_COINS = 0; // the number of coin blocks
@@ -340,24 +350,45 @@ public class MyLevel extends Level{
 	        		
 		        	// Set new localPeak and library
 		        	localPeakLevel = length;
+		        	
 		        	//localPeakLevelMap = getMap().clone();
 		        	localPeakLevelMap = new byte[width][height];
+		        	localPeakSpriteTemplates = new SpriteTemplate[width][height];
 		        	for(int x = 0;x<width;x++)
 		        	{
 		        		for(int y=0;y<height;y++)
 		        		{
 		        			localPeakLevelMap[x][y] = this.getBlock(x, y);
+		        			localPeakSpriteTemplates[x][y] = this.getSpriteTemplate(x,y);
+		        			
+		        			if(getSpriteTemplate(x,y) != null)
+		        			{
+		        				//System.out.print(localPeakSpriteTemplates[x][y]);
+		        				savedX = x;
+		        				savedY = y;
+		        			}
+		        			
 		        		}
 		        	}
-		        	localPeakSpriteTemplates = getSpriteTemplates().clone();
-		        	localPeakLibrary = levelLibrary.clone();
+
+
+		        	//localPeakSpriteTemplates = getSpriteTemplates().clone();
+		        	localPeakLibrary = new int[width];
+		        	for(int x = 0; x<width; x++)
+		        	{
+		        		localPeakLibrary[x]= levelLibrary[x];
+		        	}
+		        	//localPeakLibrary = levelLibrary.clone();
 		        	
 		        	currentRating = 0;
 		        	int mutatedGene = -1;
+		        	length = 0;
 		        	
-		        	if(librarySize != 0)
+		        	//System.out.println("lib size: " +librarySize);
+		        	if(librarySize > 0)
 		        	{
 			        	mutatedGene = random.nextInt(librarySize);
+			        	//System.out.println("mut: "+mutatedGene);
 		        	}
         			
 		        	// Create middle of level
@@ -365,24 +396,80 @@ public class MyLevel extends Level{
 			        while (length < width - 64)
 			        {
 
+			        	/*
 			            //If the level keeps this piece placement
+			        	if(k >= localPeakLibrary.length)
+			        	{
+			        		System.out.println("1 failed ");
+			        	}
+			        	
+			        	if(localPeakLibrary[k]==0)
+			        	{
+			        		System.out.println("2 failed: " +k);
+			        	}
+			        	
+			        	if(mutatedGene<=-1)
+			        	{
+			        		System.out.println("3 failed: "+mutatedGene);
+			        	}
+			        	
+			        	if(k == mutatedGene)
+			        	{
+			        		
+			        		System.out.println("4 failed ");
+
+			        	}
+			        	*/
 			        	if(k < localPeakLibrary.length && localPeakLibrary[k]!=0 && (mutatedGene>-1 && k != mutatedGene))
 			        	{
+			        		if(localPeakLibraryEnemies[k]>0)
+			        		{
+			        			//System.out.println("new enemy row: "+ localPeakLibraryEnemies[k]);
+			        			for(int y = 0; y<height; y++)
+			        			{
+			        				if(getSpriteTemplate(k,y) != null && !getSpriteTemplate(k,y).isDead)
+			        				{
+			        					getSpriteTemplate(k,y).isDead = false;
+			        				}
+			        			}
+			        		}
 			        		for(int x = length; x<localPeakLibrary[k]+length; x++)
 			        		{
 			        			for(int y =0;y<height;y++)
 			        			{
 			        				setBlock(x,y,localPeakLevelMap[x][y]);
+			        				
+
+			        				setSpriteTemplate(x,y,localPeakSpriteTemplates[x][y]);
+			        				
+			        				
+
+			        				//System.out.print(localPeakSpriteTemplates[x][y].isDead);
+
+				        			if(getSpriteTemplate(x,y) != null)
+				        			{
+				        				//System.out.print(localPeakSpriteTemplates[x][y]);
+				        			}
 			        			}
 			        		}
 			        		length += localPeakLibrary[k];
 			        		
 			        		levelLibrary[k] = localPeakLibrary[k];
 			        		
-
+				        	COINS += localPeakLibraryCoins[k];
+				        	ENEMIES += localPeakLibraryEnemies[k];
+				        	BLOCKS_EMPTY += localPeakLibraryEBlocks[k];
+				        	BLOCKS_POWER += localPeakLibraryPBlocks[k];
+				        	WASTE += localPeakLibraryWaste[k];
 			        	}else 
 			        	{
 			        		
+			        		int prevEnemies = ENEMIES; 
+			        		int prevEmpty = BLOCKS_EMPTY;
+			        		int prevBlockCoins = BLOCKS_COINS;
+			        		int prevBlockPower = BLOCKS_POWER;
+			        		int prevCoins = COINS;
+			        		int prevWaste = WASTE;
 				        	//If the level throws out previous piece for a random one
 			        		int pieceOfLevel = buildZone(length, width - length, true);
 			        		
@@ -390,14 +477,21 @@ public class MyLevel extends Level{
 				            length += pieceOfLevel;
 				            
 				            if(k < localPeakLibrary.length)
+				            {
 				            	levelLibrary[k] = pieceOfLevel;
-				            
+					        	localPeakLibraryCoins[k] = COINS-prevCoins;
+					        	localPeakLibraryEnemies[k] = ENEMIES - prevEnemies;
+					        	localPeakLibraryEBlocks[k] = BLOCKS_EMPTY - prevEmpty;
+					        	localPeakLibraryPBlocks[k] = BLOCKS_POWER - prevBlockPower;
+					        	localPeakLibraryWaste[k] = WASTE - prevWaste;
+				            }
 				            
 			        	}
 			            k++;
 			        }
+			        ///System.out.println("wat");
 			        librarySize = k;
-			        
+			        //System.out.print("k: "+k+" librarysize: "+librarySize);
 			        // Evaluate middle of level (give a level rating)
 			        int j = 0;
 			        while(levelLibrary[j]>0)
@@ -406,11 +500,11 @@ public class MyLevel extends Level{
 			        	j++;
 			        }
 
-			        
+			        currentRating = 0;
 			        //if add a point for enemies
 			        if(playerCode[0])
 			        {
-			        	currentRating+= 2*ENEMIES;
+			        	currentRating+= 10*ENEMIES;
 			        }
 			        
 			        //playerCode[1]= true;
@@ -433,49 +527,93 @@ public class MyLevel extends Level{
 			        		currentRating-= 1*BLOCKS_EMPTY;
 			        	}
 			        }
-
-			        currentRating -= 1*WASTE;
+			        //System.out.print(currentRating);
+			        //currentRating -= 1*WASTE;
+			        //System.out.println(currentRating);
 			        
+			        /*
 			        if(currentRating>0)
 			        	currentRating = random.nextInt(currentRating)+ 5;
 			        else if(currentRating == 0) currentRating = random.nextInt(5)+5;
-		        	
+		        	*/
+			        
 			        //System.out.println(currentRating+ " > "+ localLevelRatingPeak);
 
+			        /*
+			        if(currentRating>localLevelRatingPeak)
+			        	System.out.println(ENEMIES +" rating: "+ currentRating);
+			        */
+			        if(currentRating <= localLevelRatingPeak && currentRating>0)
+			        {
+			        	//System.out.println(ENEMIES +" current rating: "+ currentRating + " peak: "+localLevelRatingPeak);
+			        }
 			        
 	        	}while(currentRating > localLevelRatingPeak);
 	        	
+	        	//System.out.println("Exit the loope: "+ENEMIES +" current rating: "+ currentRating + " peak: "+localLevelRatingPeak);
 	        	// adjust global best level
 	        	if(localLevelRatingPeak > globalLevelRatingPeak)
 	        	{
+	        		System.out.println("savedX: "+savedX+" savedY: "+savedY);
+	        		
+    				if(localPeakSpriteTemplates[savedX][savedY] != null)
+    				{
+        				System.out.println(localPeakSpriteTemplates[savedX][savedY]);
+    				}
+    				
+    				System.out.println("globalChange: "+ENEMIES + " rating: "+localLevelRatingPeak);
 		        	globalLevelRatingPeak = localLevelRatingPeak;
 		        	globalPeakLevel = localPeakLevel;
 		        	
 		        	//globalPeakLevelMap = localPeakLevelMap.clone();
 		        	globalPeakLevelMap = new byte[width][height];
+		        	globalPeakSpriteTemplates = new SpriteTemplate[width][height];
 		        	for(int x = 0;x<width;x++)
 		        	{
 		        		for(int y=0;y<height;y++)
 		        		{
 		        			globalPeakLevelMap[x][y] = localPeakLevelMap[x][y];
+		        			globalPeakSpriteTemplates[x][y] = localPeakSpriteTemplates[x][y];
+		        			if(localPeakSpriteTemplates[x][y] !=null && !localPeakSpriteTemplates[x][y].isDead)
+		        			{
+		        				System.out.println(localPeakSpriteTemplates[x][y].isDead);
+		        				//setBlock(9)
+		        				globalPeakSpriteTemplates[x][y] = new SpriteTemplate(localPeakSpriteTemplates[x][y].type,false);
+		        			}
+		        			
+		        			
+		        			/*
+		        			if(localPeakSpriteTemplates[x][y] != null)
+		        			{
+		        				System.out.print(localPeakSpriteTemplates[x][y]);
+		        			}
+		        			
+		    				if(localPeakSpriteTemplates[savedX][savedY] != null)
+		    				{
+		        				System.out.print(localPeakSpriteTemplates[savedX][savedY]);
+		    				}
+		        			*/
 		        		}
 		        	}
-		        	globalPeakSpriteTemplates = localPeakSpriteTemplates.clone();
+		        	//globalPeakSpriteTemplates = localPeakSpriteTemplates.clone();
 		        	System.out.println("before "+globalPeakLevelMap[13][height-1]);
 	        	}    	
 	        }
 	        // set best scored level
-        	System.out.println("final: "+globalLevelRatingPeak);
+        	//System.out.println("final: "+globalLevelRatingPeak);
 	        
-        	System.out.println("before "+globalPeakLevelMap[13][height-1]);
+        	//System.out.println("before "+globalPeakLevelMap[13][height-1]);
 
         	for(int k=0;k<width;k++)
         	{
         		for(int j=0; j<height;j++)
         		{
         			setBlock(k,j,(byte)0);
+        			
+        			/*
         			if(getSpriteTemplate(k,j) != null)
         				getSpriteTemplate(k,j).isDead = true;
+        			*/
         		}
         	}
 
@@ -490,10 +628,25 @@ public class MyLevel extends Level{
 	        		if(x==13 && y==height-1)
 	        			System.out.println("after "+ globalPeakLevelMap[x][y]);
 	        		*/
-	        		setBlock(x,y,globalPeakLevelMap[x][y]);
-	        		if(globalPeakSpriteTemplates[x][y] != null)
+	        		try
 	        		{
-	        			setSpriteTemplate(x,y,globalPeakSpriteTemplates[x][y]);
+	        			setBlock(x,y,globalPeakLevelMap[x][y]);
+	        		}
+	        		catch(Exception e)
+	        		{
+	        			
+	        		}
+	        		
+	        		try
+	        		{
+		        		if(globalPeakSpriteTemplates[x][y] != null)
+		        		{
+		        			setSpriteTemplate(x,y,globalPeakSpriteTemplates[x][y]);
+		        		}
+	        		}
+	        		catch(Exception e)
+	        		{
+	        			
 	        		}
 	        	}
 	        }
@@ -582,16 +735,16 @@ public class MyLevel extends Level{
 	        cleanse = false;
 	        switch (type) {
 	        case ODDS_STRAIGHT:
-	            return buildStraight(x, maxLength, true, cleanse);
+	            return buildStraight(x, maxLength, false, cleanse);
 	        case ODDS_HILL_STRAIGHT:
-	            return buildStraight(x,maxLength,true, cleanse);
+	            return buildHillStraight(x,maxLength, cleanse);
 	        case ODDS_TUBES:
 	            return buildTubes(x, maxLength, cleanse);
 	        case ODDS_JUMP:
 	            if (gaps < Constraints.gaps)
-	                return buildStraight(x, maxLength,true, cleanse);
+	                return buildStraight(x, maxLength,false, cleanse);
 	            else
-	                return buildStraight(x, maxLength, true, cleanse);
+	                return buildJump(x, maxLength, cleanse);
 	        case ODDS_CANNONS:
 	            return buildCannons(x, maxLength, cleanse);
 	        }
@@ -1091,11 +1244,14 @@ public class MyLevel extends Level{
 	                		}
 	                	}
 	                	
+	                	/*
 	                	if(!tooHigh)
 	                	{
+	                	*/
 	                		setBlock(x, floor - 2, COIN);
+	                		//System.out.print("shot");
 	                		COINS++;
-	                	}
+	                	//}
 	                }
 	            }
 	        }
